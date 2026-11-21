@@ -1,4 +1,7 @@
 /**
+ * Smoke test: App (navigator + splash) renders without crashing.
+ * Native modules are mocked in jest.setup.js.
+ *
  * @format
  */
 

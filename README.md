@@ -1,97 +1,148 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# LalaHari for Doctors
 
-# Getting Started
+Doctor-facing companion app for the LalaHari Health platform (bare React Native 0.86.3 + TypeScript), mirroring the patient app stack: React Navigation, Zustand, Axios, and Firebase phone auth.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Features
 
-## Step 1: Start Metro
+1. **Sign up / sign in with mobile number** — Firebase phone OTP, then the Firebase ID token is exchanged with the backend for access + refresh tokens (`POST /auth/doctor/phone/firebase/`).
+2. **Professional profile** — name, age, gender, optional photo, medical council registration number, qualification, specialization.
+3. **Weekly availability** — load and replace the saved week with one to three non-overlapping 15-minute-step windows per open day, totaling at least six hours per day. The editor supports overnight windows and `00:00`–`24:00` full days.
+4. **Home dashboard (Schedule tab)** — welcome message, notification bell with unread badge, profile shortcut, and a Teams-style day calendar timeline of appointments. Video Join follows the backend's `can_join` flag.
+5. **Earnings tab** — completed consultation totals, average, chart and video/audio/chat breakdown from `GET /doctors/me/earnings/`. Toggle **Daily**, **Monthly** and **Financial Year** (April–March); period navigation uses the dates supplied by the server.
+6. **Profile screen** — edit details, upload or remove a photo, and upload, replace or delete verification documents (registration certificate, degree, ID, or up to five other documents).
+7. **Notifications screen** — server notifications with pagination, read/unread state and mark-all-read. Tapping an appointment notification opens its appointment.
+8. **Video call** — custom one-to-one call screen using the 100ms React Native core SDK, including front/back camera switching.
+9. **Appointment detail** — patient intake info, time window, and the server-gated Join button.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Authentication and demo data
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Authentication uses Firebase phone OTP and the live doctor API by default. Access
+and rotating refresh tokens are stored in the device Keychain/Keystore. On launch,
+the app refreshes the session and retrieves the doctor profile and onboarding step.
+An expired session returns to sign-in; a network failure leaves the saved session
+intact and offers a retry. Logging out removes the push device registration and
+revokes the refresh token before clearing the session locally.
 
-```sh
-# Using npm
-npm start
+Appointments use the live doctor schedule and appointment detail APIs by default;
+`USE_MOCK_APPOINTMENTS` enables demo appointments, which cannot start video calls.
+Earnings uses the authenticated live API and requires a verified doctor. Its
+totals exclude other currencies, which are listed separately. Notifications use
+the authenticated `/notifications/` APIs; the bell uses the server unread count.
+Profile, document and availability writes use the live API:
 
-# OR using Yarn
-yarn start
+Availability uses `GET` and `PUT /doctors/me/availability/`. Profile photos use
+`PUT`/`DELETE /doctors/me/photo/`; documents use `POST /doctors/me/documents/`
+and `DELETE /doctors/me/documents/{id}/`. Photo uploads accept JPG, PNG or WEBP
+up to 5 MB; documents accept PDF, JPG or PNG up to 10 MB.
+
+Availability uses India time. Overnight windows belong to the day they start,
+and must not overlap the next day's windows, including across Sunday/Monday.
+`24:00` is an end-of-day boundary, not a start time. The published API does not
+specify whether it accepts `24:00` or overnight windows: confirm backend support
+before relying on these options. Backend validation errors are shown to the user.
+The timeline shows all 24 hours and includes consultations starting on the
+previous day when they continue into the selected day.
+
+For local authentication demos only, set `USE_MOCK_AUTH = true` to use OTP
+**123456** without sending an SMS. Do not ship demo authentication in production.
+
+### Video consultation setup
+
+The backend must be configured with 100ms credentials and a private-room template
+with doctor and patient roles, and must expose the authenticated join, schedule,
+appointment-detail and call-update endpoints. Provider credentials and room creation
+stay on the backend; the short-lived participant token is held only in memory.
+The patient app must join the same backend-managed appointment room. The app does
+not request recording or transcription.
+
+The core SDK is used rather than the prebuilt UI because the latter declares a
+React Navigation 6 peer dependency while this app uses version 7. Android requires
+API 24 or later; install dependencies and rebuild the native app. On iOS, run
+`pod install` from `ios` on a Mac and rebuild. Camera and microphone permission
+are required; if denied, enable them in system settings. The schedule and detail
+screen refresh eligibility every 30 seconds; the server remains authoritative.
+When joining fails, the screen shows a shareable diagnostic stage and, when
+available, an HTTP status or numeric 100ms SDK error code. It does not include
+tokens, appointment identifiers, request bodies or server response bodies.
+
+Call events are sent after the SDK connects and after a successful leave or a
+terminal removal. If reporting fails, the app alerts the doctor; it does not
+currently queue events for offline retry. Android and iOS device testing, backend
+configuration and an actual doctor-to-patient call are required before production
+use, including verification of permissions, reconnection, media and lifecycle
+reporting. No iOS native build can be performed on Windows.
+
+## Setup
+
+```bash
+npm install
+npm start          # Metro
+npm run android    # build & run on Android
 ```
 
-## Step 2: Build and run your app
+The Ionicons and MaterialCommunityIcons fonts used by the app are bundled in the Android
+and iOS native projects. Rebuild the app after changing native icon-font configuration.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+### Android release build (Windows)
 
-### Android
+From the project root in PowerShell:
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```powershell
+Set-Location android
+.\gradlew.bat assembleRelease
 ```
 
-### iOS
+The APK is generated at `android/app/build/outputs/apk/release/app-release.apk`.
+To build an Android App Bundle instead, run `.\gradlew.bat bundleRelease`.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+Release builds currently use the debug signing key. Configure your own release
+keystore before publishing, and register its SHA-1 with Firebase for phone OTP.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Run only one Android build at a time in this checkout. Overlapping terminal or IDE
+builds can lock CMake log files on Windows and fail with "Unable to delete
+directory". Let the active build finish, or cancel it in its terminal/IDE before
+retrying. If the error persists with no builds running, close the process holding
+the files before deleting the affected generated logs and rebuilding.
 
-```sh
-bundle install
+If you move or copy the project and Gradle reports a dependency directory at the
+old location, delete the generated autolinking configuration before rebuilding.
+React Native caches absolute paths and does not invalidate them just because the
+project moved. From the project root:
+
+```powershell
+Remove-Item -LiteralPath .\android\build\generated\autolinking\autolinking.json
+Set-Location android
+.\gradlew.bat assembleRelease
 ```
 
-Then, and every time you update your native dependencies, run:
+### Firebase (required for real OTP)
 
-```sh
-bundle exec pod install
-```
+This app needs its **own** Firebase app registration — the patient app's `google-services.json` will not work:
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+1. In the LalaHari Firebase project, add an Android app with package name **`com.lalaharidoctor`**.
+2. Download its `google-services.json` into `android/app/`.
+3. Enable **Phone** sign-in in Firebase Console → Authentication.
+4. Add your debug SHA-1 (and release SHA-1) in Firebase project settings, or OTP will fail.
 
-```sh
-# Using npm
-npm run ios
+The `com.google.gms.google-services` plugin is applied **only if** `android/app/google-services.json` exists — the app builds without it (a warning is printed during the build). Real phone OTP requires the file and a rebuild. For iOS, add the app's `GoogleService-Info.plist` to the Xcode target, configure Firebase Phone Auth's APNs or reCAPTCHA requirements, and run `pod install` in `ios` after installing dependencies.
 
-# OR using Yarn
-yarn ios
-```
+### Push notifications
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+The app requests notification permission, registers its Firebase Messaging token
+after sign-in and on token refresh, and removes the current device token before
+logging out. Android 13+ requires notification permission. Foreground messages
+refresh the badge and show a notice; tapping a system notification opens the
+appointment when its data contains a numeric `appointment_id`. If device-token
+retrieval or removal fails, logout reports the error and can be retried.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+For iOS push delivery, configure Push Notifications and Background Modes / Remote
+notifications in the signed Xcode target, upload the APNs key to Firebase, add
+the iOS Firebase configuration and install pods. A physical iOS device and valid
+signing are required for verification. The backend must send the appointment ID
+in the FCM data payload. Device registration and delivery cannot be verified
+without configured Firebase, backend access and real devices.
 
-## Step 3: Modify your app
+## Notes
 
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- The project lives at `C:\dev\LalaHariDoctor` — a short, space-free path is required because the Android CMake/Ninja native build fails on Windows when paths exceed 260 characters.
+- Authentication tokens persist locally. The doctor profile, onboarding state and notifications are reloaded from the server; demo data remains in memory.

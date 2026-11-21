@@ -1,6 +1,21 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+// Google Services plugin: applied only when the Firebase config file exists, so the
+// app builds before google-services.json is added (phone OTP then fails at runtime).
+// Get the file: Firebase Console -> project -> Android app "com.lalaharidoctor" ->
+// download google-services.json into android/app/. See README > Firebase.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+    println('>>> google-services.json found — Firebase enabled.')
+} else {
+    println('')
+    println('>>> WARNING: android/app/google-services.json MISSING.')
+    println('>>> Building WITHOUT Firebase config — phone OTP will NOT work at runtime.')
+    println('>>> Download google-services.json for com.lalaharidoctor from the Firebase console.')
+    println('')
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.

@@ -31,6 +31,8 @@ local.properties
 *.iml
 *.hprof
 .cxx/
+android/app/google-services.json
+android/build-log*.txt
 *.keystore
 !debug.keystore
 .kotlin/
