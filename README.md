@@ -83,20 +83,66 @@ npm run android    # build & run on Android
 The Ionicons and MaterialCommunityIcons fonts used by the app are bundled in the Android
 and iOS native projects. Rebuild the app after changing native icon-font configuration.
 
-### Android release build (Windows)
+### Prepare an Android Play Store release
 
-From the project root in PowerShell:
+Google Play releases should be uploaded as a signed Android App Bundle (AAB), not
+the debug-signed APK. Release builds now require a dedicated upload keystore;
+they never fall back to the debug key.
 
-```powershell
-Set-Location android
-.\gradlew.bat assembleRelease
-```
+1. In Play Console, create the app using package name `com.lalaharidoctor` and
+   enroll in Play App Signing. Package names are permanent.
+2. If you do not already have an upload key for this app, create one and store
+   the keystore outside this checkout. Keep a secure backup:
 
-The APK is generated at `android/app/build/outputs/apk/release/app-release.apk`.
-To build an Android App Bundle instead, run `.\gradlew.bat bundleRelease`.
+   ```powershell
+   keytool -genkeypair -v -keystore "$HOME\lalahari-doctor-upload.jks" `
+     -alias lalahari-upload -keyalg RSA -keysize 2048 -validity 10000
+   ```
 
-Release builds currently use the debug signing key. Configure your own release
-keystore before publishing, and register its SHA-1 with Firebase for phone OTP.
+   Do not commit the keystore or put its passwords in this repository. If an
+   upload key already exists, continue using that key for future updates.
+3. Add these entries to your user-level Gradle properties file, normally
+   `$HOME\.gradle\gradle.properties` (create the file if needed). Use the actual
+   absolute path and values from your key; do not share or commit this file:
+
+   ```properties
+   LALAHARI_UPLOAD_STORE_FILE=C:/Users/YOUR_USER/lalahari-doctor-upload.jks
+   LALAHARI_UPLOAD_STORE_PASSWORD=your-keystore-password
+   LALAHARI_UPLOAD_KEY_ALIAS=lalahari-upload
+   LALAHARI_UPLOAD_KEY_PASSWORD=your-key-password
+   ```
+
+4. Ensure the app's Firebase Android configuration exists at
+   `android/app/google-services.json` and has a client for
+   `com.lalaharidoctor`. After the first Play upload, register the Play Console
+   **app signing certificate SHA-1** in Firebase for phone authentication.
+   Register the upload certificate as well if your Firebase setup requires it.
+5. From PowerShell, build the bundle:
+
+   ```powershell
+   Set-Location android
+   .\gradlew.bat :app:bundleRelease
+   ```
+
+   The bundle is generated at
+   `android\app\build\outputs\bundle\release\app-release.aab`. Upload it to
+   Play Console's internal testing track first and test sign-in, notifications,
+   availability, appointments and video calls on real devices.
+
+Before production rollout, complete Play Console's store listing, app icon and
+screenshots, privacy policy, Data safety form, content rating, app access
+instructions for reviewers, health-app declaration and any account testing
+requirements shown in the Console. This app handles health-related consultation
+data and camera/microphone access; ensure the privacy policy and disclosures
+accurately describe the backend, Firebase and 100ms data handling. The Play
+Console account owner must submit and roll out the release.
+
+The Android launcher icons are generated from the supplied LalaHari logo. The
+512x512 Play listing icon is at `store-assets/play/icon-512.png`; the store
+listing title is `LalaHari Doctor App`. Before submission, update the published
+privacy policy to explicitly cover doctor-app data, 100ms video/audio calls,
+camera and microphone use, and Firebase Cloud Messaging. The current policy
+does not yet describe those app-specific disclosures.
 
 Run only one Android build at a time in this checkout. Overlapping terminal or IDE
 builds can lock CMake log files on Windows and fail with "Unable to delete

@@ -73,6 +73,12 @@ react {
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
 def enableProguardInReleaseBuilds = false
+def releaseStoreFile = providers.gradleProperty("LALAHARI_UPLOAD_STORE_FILE").orNull
+def releaseStorePassword = providers.gradleProperty("LALAHARI_UPLOAD_STORE_PASSWORD").orNull
+def releaseKeyAlias = providers.gradleProperty("LALAHARI_UPLOAD_KEY_ALIAS").orNull
+def releaseKeyPassword = providers.gradleProperty("LALAHARI_UPLOAD_KEY_PASSWORD").orNull
+def releaseSigningConfigured = [releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword]
+        .every { it != null && !it.trim().isEmpty() }
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -107,17 +113,40 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (releaseSigningConfigured) {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == "bundleRelease" || task.name == "assembleRelease") {
+        task.doFirst {
+            if (!releaseSigningConfigured) {
+                throw new GradleException(
+                        "Release signing is not configured. Set LALAHARI_UPLOAD_STORE_FILE, " +
+                        "LALAHARI_UPLOAD_STORE_PASSWORD, LALAHARI_UPLOAD_KEY_ALIAS and " +
+                        "LALAHARI_UPLOAD_KEY_PASSWORD in your user-level Gradle properties."
+                )
+            }
+            if (!rootProject.file(releaseStoreFile).isFile()) {
+                throw new GradleException("The configured Play upload keystore file does not exist.")
+            }
         }
     }
 }
