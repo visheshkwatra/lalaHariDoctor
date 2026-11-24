@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image, Text, StyleSheet, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Colors } from '../../constants/colors';
 import { getApiErrorMessage, restoreDoctorSession } from '../../services/api';
 import { RootStackParamList } from '../../navigation/types';
@@ -33,17 +32,19 @@ export const SplashScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primaryDark} />
-      <View style={styles.logoWrapper}>
-        <MaterialIcon name="stethoscope" size={64} color={Colors.white} />
-      </View>
-      <Text style={styles.title}>LalaHari for Doctors</Text>
-      <Text style={styles.subtitle}>Consult. Care. Grow.</Text>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+      <Image
+        source={require('../../../assets/branding/lalahari-doctors-wordmark.png')}
+        style={styles.logo}
+        resizeMode="contain"
+        accessible
+        accessibilityLabel="LalaHariHealth for Doctors"
+      />
       {error ? (
         <TouchableOpacity style={styles.spinner} onPress={() => setAttempt((value) => value + 1)}>
-          <Text style={styles.subtitle}>{error}{'\n'}Tap to retry</Text>
+          <Text style={styles.error}>{error}{'\n'}Tap to retry</Text>
         </TouchableOpacity>
-      ) : <ActivityIndicator style={styles.spinner} color={Colors.white} />}
+      ) : <ActivityIndicator style={styles.spinner} color={Colors.primary} />}
     </SafeAreaView>
   );
 };
@@ -51,28 +52,21 @@ export const SplashScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primaryDark,
+    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
-  logoWrapper: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+  logo: {
+    width: '100%',
+    maxWidth: 360,
+    aspectRatio: 3,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: Colors.white,
-  },
-  subtitle: {
+  error: {
     fontSize: 14,
-    color: Colors.primaryLight,
+    color: Colors.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
   },
   spinner: {
     marginTop: 32,

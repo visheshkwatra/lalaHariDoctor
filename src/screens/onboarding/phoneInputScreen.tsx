@@ -11,10 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Colors } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { USE_MOCK_AUTH } from '../../services/api';
@@ -61,7 +61,13 @@ export const PhoneInputScreen: React.FC<Props> = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.iconWrapper}>
-            <MaterialIcon name="stethoscope" size={44} color={Colors.primary} />
+            <Image
+              source={require('../../../assets/branding/lalahari-mark.png')}
+              style={styles.logo}
+              resizeMode="contain"
+              accessible
+              accessibilityLabel="LalaHariHealth"
+            />
           </View>
           <Text style={styles.title}>Doctor Sign Up</Text>
           <Text style={styles.subtitle}>
@@ -118,13 +124,15 @@ const styles = StyleSheet.create({
   iconWrapper: {
     width: 88,
     height: 88,
-    borderRadius: 44,
-    backgroundColor: Colors.primaryLight,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: 24,
   },
+  logo: { width: '100%', height: '100%' },
   title: {
     fontSize: 26,
     fontWeight: '800',

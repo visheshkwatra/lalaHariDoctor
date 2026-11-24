@@ -137,9 +137,10 @@ data and camera/microphone access; ensure the privacy policy and disclosures
 accurately describe the backend, Firebase and 100ms data handling. The Play
 Console account owner must submit and roll out the release.
 
-The Android launcher icons are generated from the supplied LalaHari logo. The
-512x512 Play listing icon is at `store-assets/play/icon-512.png`; the store
-listing title is `LalaHari Doctor App`. Before submission, update the published
+The supplied LalaHari logo is used for the Android launcher, Play listing icon,
+splash screen and doctor sign-up screen. The 512x512 Play listing icon is at
+`store-assets/play/icon-512.png`; the store listing title is `LalaHari Doctor App`.
+Before submission, update the published
 privacy policy to explicitly cover doctor-app data, 100ms video/audio calls,
 camera and microphone use, and Firebase Cloud Messaging. The current policy
 does not yet describe those app-specific disclosures.
